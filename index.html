@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIS GUNUNG SAHARI 150kv - Angel/Devil Edition</title>
+    <link rel="preload" href="imagess.png" as="image">
+    <style>
+        /* === TEMA ANGEL & DEVIL (KELISTRIKAN) === */
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Roboto:wght@400;500;700&display=swap');
+
+        :root {
+            /* === ANGEL MODE (Default - Sistem Aman / Suci / Celestial) === */
+            --bg-color: #e6f2ff;
+            --panel-bg: rgba(255, 255, 255, 0.75);
+            --primary-glow: #00bfff;
+            --secondary-glow: #ffd700; /* Emas Suci */
+            --text-main: #08253a;
+            --border-glow: 0 0 20px rgba(0, 191, 255, 0.4);
+            --accent-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+            --sky-gradient: radial-gradient(circle at center, rgba(230, 242, 255, 0.8) 0%, rgba(180, 210, 255, 0.9) 100%);
+            --lightning-color: rgba(255, 215, 0, 0.9); /* Petir Keemasan */
+            --shadow-lightning: #ffd700;
+            --btn-active: #00bfff;
+            --btn-text: #ffffff;
+            --title-color: #005a7a;
+        }
+
+        [data-theme="devil"] {
+            /* === DEVIL MODE (Tegangan Tinggi / Bahaya / Underworld) === */
+            --bg-color: #0a0000;
+            --panel-bg: rgba(20, 0, 0, 0.85);
+            --primary-glow: #ff0000; /* Merah Darah/Neraka */
+            --secondary-glow: #ff4500; /* Oranye Api */
+            --text-main: #ffe6e6;
+            --border-glow: 0 0 20px rgba(255, 0, 0, 0.6);
+            --accent-shadow: 0 0 15px rgba(255, 69, 0, 0.7);
+            --sky-gradient: radial-gradient(circle at center, rgba(30, 0, 0, 0.8) 0%, rgba(0, 0, 0, 1) 100%);
+            --lightning-color: rgba(255, 0, 0, 0.9); /* Petir Merah Neraka */
+            --shadow-lightning: #ff0000;
+            --btn-active: #ff0000;
+            --btn-text: #ffffff;
+            --title-color: #ffcccc;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            display: flex;
+            transition: background-color 0.6s ease, color 0.6s ease;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -2;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .galaxy-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--sky-gradient);
+            z-index: -1;
+            transition: background 0.6s ease;
+        }
+
+        /* === SIDEBAR === */
+        .sidebar {
+            width: 300px;
+            height: 100vh;
+            background: var(--panel-bg);
+            border-right: 1px solid var(--primary-glow);
+            box-shadow: var(--border-glow);
+            padding: 25px 20px;
+            position: fixed;
+            left: 0;
+            transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            overflow-y: auto;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .sidebar.closed { left: -300px; }
+
+        .main-content {
+            margin-left: 300px;
+            width: calc(100% - 300px);
+            min-height: 100vh;
+            padding: 20px 30px;
+            transition: margin-left 0.4s ease, width 0.4s ease;
+        }
+        .main-content.expanded { margin-left: 0; width: 100%; }
+
+        /* === HEADER === */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background: var(--panel-bg);
+            border: 1px solid var(--primary-glow);
+            border-radius: 12px;
+            box-shadow: var(--border-glow);
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+            transition: all 0.5s ease;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 20px; }
+
+        .logo-img {
+            width: 45px;
+            height: auto;
+            image-rendering: crisp-edges;
+            filter: drop-shadow(0 0 10px var(--secondary-glow));
+            transition: filter 0.5s ease;
+        }
+
+        header h1 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--title-color);
+            text-shadow: 0 0 10px var(--primary-glow);
+            letter-spacing: 1px;
+            transition: color 0.5s ease;
+        }
+
+        header h1 span {
+            color: var(--secondary-glow);
+            text-shadow: 0 0 8px var(--secondary-glow);
+        }
+
+        .clock-container { text-align: right; display: flex; align-items: center; gap: 20px; }
+
+        /* TOGGLE THEME BUTTON */
+        .theme-toggle-btn {
+            background: transparent;
+            color: var(--secondary-glow);
+            border: 2px solid var(--secondary-glow);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            box-shadow: var(--accent-shadow);
+        }
+
+        .theme-toggle-btn:hover {
+            background: var(--secondary-glow);
+            color: #000;
+            box-shadow: 0 0 20px var(--secondary-glow);
+            transform: scale(1.05);
+        }
+
+        #digital-clock {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--secondary-glow);
+            text-shadow: 0 0 15px var(--secondary-glow);
+            line-height: 1;
+        }
+
+        #current-date {
+            font-size: 0.95rem;
+            color: var(--primary-glow);
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        /* === MENU & KONTAK === */
+        .sidebar h2 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 2px dashed var(--secondary-glow);
+            padding-bottom: 10px;
+            color: var(--secondary-glow);
+            letter-spacing: 1px;
+        }
+
+        .contact-list, .link-list { list-style: none; margin-bottom: 35px; }
+        .contact-list li, .link-list li { margin-bottom: 12px; }
+
+        .contact-list a, .link-list a {
+            color: var(--text-main);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border: 1px solid rgba(150, 150, 150, 0.2);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            font-weight: 500;
+            background: rgba(150, 150, 150, 0.05);
+        }
+
+        .contact-list a:hover, .link-list a:hover {
+            background: rgba(150, 150, 150, 0.2);
+            border-color: var(--primary-glow);
+            box-shadow: 0 0 15px var(--primary-glow);
+            transform: translateX(5px);
+        }
+
+        /* === KALENDER === */
+        .card {
+            background: var(--panel-bg);
+            border: 1px solid var(--primary-glow);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: var(--border-glow);
+            max-width: 1000px;
+            margin: 0 auto;
+            backdrop-filter: blur(10px);
+            transition: all 0.5s ease;
+        }
+
+        .shift-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(150, 150, 150, 0.2);
+        }
+
+        .shift-btn {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--primary-glow);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            flex: 1;
+        }
+
+        .shift-btn:hover { background: rgba(150, 150, 150, 0.2); }
+        .shift-btn.active {
+            background: var(--btn-active);
+            color: var(--btn-text);
+            box-shadow: var(--border-glow);
+        }
+
+        .calendar-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 25px; padding: 0 10px;
+        }
+        
+        .calendar-header button {
+            background: transparent;
+            color: var(--secondary-glow);
+            border: 1px solid var(--secondary-glow);
+            padding: 10px 20px; cursor: pointer; font-weight: bold;
+            border-radius: 8px; transition: all 0.3s; font-size: 1rem;
+        }
+        
+        .calendar-header button:hover {
+            background: var(--secondary-glow);
+            color: #000;
+            box-shadow: var(--accent-shadow);
+        }
+
+        .calendar-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            gap: 10px; text-align: center;
+        }
+
+        .calendar-grid .day-name {
+            font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.2rem;
+            padding: 12px 0; border-bottom: 2px solid var(--primary-glow);
+            color: var(--primary-glow); text-transform: uppercase;
+        }
+
+        .calendar-grid .day {
+            padding: 18px 0; border: 1px solid rgba(150, 150, 150, 0.15);
+            border-radius: 8px; cursor: pointer; transition: all 0.2s ease;
+            background: rgba(150, 150, 150, 0.1); font-size: 1.2rem; font-weight: 500;
+        }
+
+        .calendar-grid .day:hover {
+            background: rgba(150, 150, 150, 0.3);
+            border-color: var(--primary-glow);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px var(--primary-glow);
+        }
+
+        .calendar-grid .today {
+            background: rgba(255, 215, 0, 0.2);
+            color: var(--secondary-glow); font-weight: 700;
+            border: 2px solid var(--secondary-glow);
+            box-shadow: inset 0 0 10px var(--secondary-glow), 0 0 10px var(--secondary-glow);
+        }
+
+        /* === BADGE SHIFT & LEGEND === */
+        .badge {
+            display: inline-block; padding: 6px 12px; border-radius: 6px;
+            color: #fff; font-weight: bold; font-size: 0.95rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5); box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            min-width: 50px; border: 1px solid rgba(255,255,255,0.2);
+        }
+        /* Menyesuaikan warna agar tetap masuk di tema */
+        .badge-ps { background: linear-gradient(135deg, #2e7d32, #1b5e20); }
+        .badge-sm { background: linear-gradient(135deg, #d84315, #bf360c); }
+        .badge-p  { background: linear-gradient(135deg, #0277bd, #01579b); }
+        .badge-s  { background: linear-gradient(135deg, #c2185b, #880e4f); }
+        .badge-m  { background: linear-gradient(135deg, #4527a0, #311b92); }
+        .badge-l  { background: linear-gradient(135deg, #c62828, #b71c1c); }
+
+        .legend-container {
+            margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--primary-glow); 
+            display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
+        }
+
+        /* === MODAL POP-UP === */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); z-index: 1000; justify-content: center; align-items: center;
+            backdrop-filter: blur(5px); opacity: 0; transition: opacity 0.3s;
+        }
+        .modal-overlay.show { display: flex; opacity: 1; }
+
+        .modal-content {
+            background: var(--panel-bg); border: 2px solid var(--primary-glow); border-radius: 12px;
+            padding: 20px 25px; width: 85%; max-width: 420px; box-shadow: 0 0 30px var(--primary-glow);
+            position: relative; transform: scale(0.9); transition: transform 0.3s;
+            backdrop-filter: blur(15px);
+        }
+        .modal-overlay.show .modal-content { transform: scale(1); }
+
+        .close-modal {
+            position: absolute; top: 10px; right: 15px; color: var(--secondary-glow);
+            font-size: 2rem; cursor: pointer; font-weight: bold; transition: color 0.2s;
+        }
+        .close-modal:hover { color: #fff; text-shadow: 0 0 10px #fff; }
+
+        /* === LOADING OVERLAY === */
+        .loading-screen {
+            display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95); z-index: 9999; justify-content: center; align-items: center;
+            flex-direction: column; backdrop-filter: blur(8px); color: var(--primary-glow);
+            font-family: 'Rajdhani', sans-serif; font-size: 1.5rem; text-transform: uppercase;
+            letter-spacing: 2px; transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+        }
+        .loading-screen.hide { opacity: 0; visibility: hidden; }
+
+        .loader-spinner {
+            width: 50px; height: 50px; border: 4px solid rgba(150, 150, 150, 0.2);
+            border-top: 4px solid var(--primary-glow); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 20px;
+            box-shadow: var(--border-glow);
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Floating Sidebar Toggle */
+        .menu-toggle {
+            position: fixed; bottom: 25px; left: 25px; z-index: 1100;
+            width: 55px; height: 55px; border-radius: 50%; display: flex;
+            align-items: center; justify-content: center;
+            box-shadow: var(--border-glow); background: var(--panel-bg);
+            border: 2px solid var(--primary-glow); color: var(--primary-glow);
+            font-size: 1.5rem; cursor: pointer; transition: all 0.3s ease;
+        }
+        .menu-toggle:hover {
+            background: var(--primary-glow); color: #fff; transform: scale(1.1);
+        }
+
+        @media (max-width: 900px) {
+            .sidebar { width: 280px; left: -280px; }
+            .sidebar.active-mobile { left: 0; }
+            .main-content { margin-left: 0 !important; width: 100% !important; padding: 15px; }
+            header { flex-direction: column; gap: 15px; text-align: center; }
+            .clock-container { flex-direction: column; gap: 10px; }
+            header h1 { font-size: 1.5rem; }
+            .shift-selector { flex-direction: column; }
+        }
+    </style>
+</head>
+<body data-theme="angel"> <!-- Default: Angel Mode (Aman) -->
+
+    <div id="loading-screen" class="loading-screen">
+        <div class="loader-spinner"></div>
+        <p id="loading-text">MEMUAT SISTEM GIS...</p>
+    </div>
+
+    <!-- Animasi Latar Belakang -->
+    <canvas id="lightning-canvas"></canvas>
+    <div class="galaxy-overlay"></div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <h2>⚡ PORTAL OPERASIONAL</h2>
+        <ul class="link-list">
+            <li><a href="http://10.3.187.6/apdjakarta/login" target="_blank">🌐 Portal PLN APD</a></li>
+            <li><a href="https://super-i-app.plnes.co.id/login" target="_blank">⚡ Super-i App</a></li>
+            <li><a href="https://docs.google.com/spreadsheets/d/1nWk4b3st2SFbPBniYTHnva9Ujo11pCMlqXkFOXOi_YU/edit?usp=sharing" target="_blank">📅 Jadwal OPGI 20kV</a></li>
+            <li><a href="https://docs.google.com/spreadsheets/d/1piskUPZdFL5z_jAaxTdcYsEz4aEqB9xRZgDkWyB_fcA/edit?usp=sharing" target="_blank">📝 Log Sheet 1</a></li>
+            <li><a href="https://docs.google.com/spreadsheets/d/1m86LL-PKwcL3QR0VPYbzDQdTanEJ-dJPAcRjGK67RAs/edit?usp=sharing" target="_blank">📝 Log Sheet 2</a></li>
+            <li><a href="https://docs.google.com/spreadsheets/d/1FkLa1sc0zge2yqTYWOepxzLhl8bjQCx1/edit?usp=sharing&ouid=117400822074928604310&rtpof=true&sd=true" target="_blank">📄 Berita Acara (BA)</a></li>
+        </ul>
+
+        <h2>KONTAK WA DIRECT</h2>
+        <ul class="contact-list">
+            <li><a href="https://wa.me/62816844801?text=assalamualaikum,%20permisi%20Cang" target="_blank">📞 Piket 20kv</a></li>
+            <li><a href="https://wa.me/6281389500637?text=assalamualaikum,%20permisi%20Cang" target="_blank">📞 Piket 150kv</a></li>
+            <li><a href="https://wa.me/6282121168643?text=assalamualaikum,%20permisi%20Mas%20Eko" target="_blank">👤 Mas Eko</a></li>
+            <li><a href="https://wa.me/6287787301417?text=assalamualaikum,%20permisi%20Cang" target="_blank">👤 Cang Syarif</a></li>
+            <li><a href="https://wa.me/6287832215914?text=assalamualaikum,%20permisi%20Cang" target="_blank">👤 Cang Suwarto</a></li>
+            <li><a href="https://wa.me/6285717733041?text=assalamualaikum,%20permisi%20Cang" target="_blank">👤 Cang Ikhsan</a></li>
+        </ul>
+    </aside>
+
+    <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+
+    <!-- KONTEN UTAMA -->
+    <main class="main-content" id="main-content">
+        <header>
+            <div class="header-left">
+                <img src="imagess.png" alt="Logo PLN GIS" class="logo-img">
+                <h1>GIS <span>GUNUNG SAHARI</span> 150kv</h1>
+            </div>
+            <div class="clock-container">
+                <button class="theme-toggle-btn" onclick="toggleTheme()" id="theme-btn">😈 Devil Mode (Bahaya)</button>
+                <div>
+                    <div id="digital-clock">00:00:00</div>
+                    <div id="current-date">Senin, 1 Jan 2024</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="card">
+            <h3 style="color: var(--secondary-glow); border-bottom: 1px dashed rgba(255,215,0,0.5); padding-bottom: 15px; margin-bottom: 20px; font-family: 'Rajdhani', sans-serif; font-size: 1.6rem; text-align: center; text-transform: uppercase;">
+                Kalender & Jadwal Interaktif Operator
+            </h3>
+            
+            <div class="shift-selector">
+                <button class="shift-btn active" id="btn-8-18" onclick="setShiftType('8-18')">Pola 8-18 Jam</button>
+                <button class="shift-btn" id="btn-24" onclick="setShiftType('24')">Pola 24 Jam</button>
+                <button class="shift-btn" id="btn-8" onclick="setShiftType('8')">Pola 8 Jam</button>
+            </div>
+
+            <div class="calendar-header">
+                <button onclick="changeMonth(-1)">&lt; Mundur</button>
+                <span id="month-year" style="font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1.5rem; text-shadow: 0 0 10px var(--primary-glow);">Bulan Tahun</span>
+                <button onclick="changeMonth(1)">Maju &gt;</button>
+            </div>
+            <div class="calendar-grid" id="calendar-body">
+                <!-- Kalender JS -->
+            </div>
+            
+            <div class="legend-container">
+                <span class="badge badge-ps">P&S : Pagi & Sore</span>
+                <span class="badge badge-sm">S&M : Sore & Malam</span>
+                <span class="badge badge-p">P : Pagi</span>
+                <span class="badge badge-s">S : Siang</span>
+                <span class="badge badge-m">M : Malam</span>
+                <span class="badge badge-l">L : Libur</span>
+            </div>
+        </div>
+
+        <footer style="text-align: center; padding: 25px; margin-top: 30px; font-size: 1rem; color: var(--secondary-glow); font-family: 'Rajdhani', sans-serif; font-weight: bold;">
+            &copy; <span id="footer-year"></span> GIS Gunung Sahari 150kv - Angel/Devil Interactive UI.
+        </footer>
+    </main>
+
+    <!-- MODAL POPUP -->
+    <div class="modal-overlay" id="schedule-modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+            <h3 id="modal-date-title" style="font-family: 'Rajdhani'; font-size: 1.4rem; color: var(--secondary-glow); border-bottom: 1px solid var(--secondary-glow); padding-bottom: 12px; margin-bottom: 20px;">Jadwal Shift</h3>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 1rem; color: var(--text-main);">
+                <thead>
+                    <tr>
+                        <th style="border: 1px solid var(--primary-glow); padding: 10px; background: rgba(150,150,150,0.1); color: var(--primary-glow);">Operator</th>
+                        <th style="border: 1px solid var(--primary-glow); padding: 10px; background: rgba(150,150,150,0.1); color: var(--primary-glow);">Status Shift</th>
+                    </tr>
+                </thead>
+                <tbody id="modal-schedule-body">
+                    <!-- Data JS -->
+                </tbody>
+            </table>
+
+            <h4 style="color: var(--primary-glow); margin-bottom: 8px; font-weight: 500; font-size: 0.95rem;">Log / Catatan Hari Ini:</h4>
+            <textarea id="agenda-input" style="width: 100%; height: 80px; background: rgba(0, 0, 0, 0.4); color: var(--text-main); border: 1px solid var(--primary-glow); padding: 10px; border-radius: 8px; resize: none; font-size: 0.95rem;"></textarea>
+            <button onclick="saveAgenda()" style="margin-top: 15px; background: transparent; color: var(--secondary-glow); border: 2px solid var(--secondary-glow); padding: 10px 15px; cursor: pointer; font-weight: bold; border-radius: 8px; width: 100%; text-transform: uppercase; transition: all 0.3s;">Simpan Catatan</button>
+        </div>
+    </div>
+
+    <!-- === JAVASCRIPT === -->
+    <script>
+        // 1. ANIMASI PETIR (ADAPTIF TEMA ANGEL/DEVIL)
+        const canvas = document.getElementById('lightning-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        
+        function resizeCanvas() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function drawLightning(startX, startY, endX, endY, branches) {
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            let currX = startX;
+            let currY = startY;
+            const steps = 15;
+            
+            const currentTheme = document.body.getAttribute('data-theme');
+            // Warna disesuaikan dengan mode Angel / Devil
+            const isDevil = currentTheme === 'devil';
+            const strokeColor = isDevil ? `rgba(255, 0, 0, ${0.8 + Math.random()*0.2})` : `rgba(255, 215, 0, ${0.8 + Math.random()*0.2})`; 
+            const shadowColor = isDevil ? '#ff0000' : '#FFD700';
+
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 2 + Math.random();
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = shadowColor;
+
+            for (let i = 0; i < steps; i++) {
+                currX += (endX - startX) / steps + (Math.random() - 0.5) * 45;
+                currY += (endY - startY) / steps + (Math.random() - 0.5) * 45;
+                ctx.lineTo(currX, currY);
+
+                if (branches > 0 && Math.random() > 0.8) {
+                    drawLightning(currX, currY, currX + (Math.random()-0.5)*150, currY + 150, branches - 1);
+                }
+            }
+            ctx.stroke();
+        }
+
+        function animateLightning() {
+            const currentTheme = document.body.getAttribute('data-theme');
+            ctx.fillStyle = currentTheme === 'devil' ? "rgba(10, 0, 0, 0.15)" : "rgba(230, 242, 255, 0.25)";
+            ctx.fillRect(0, 0, width, height);
+
+            // Petir lebih sering muncul jika di Devil Mode
+            const strikeRate = currentTheme === 'devil' ? 0.92 : 0.96;
+
+            if (Math.random() > strikeRate) { 
+                const x = Math.random() * width;
+                drawLightning(x, 0, x + (Math.random()-0.5)*350, height, 2);
+            }
+            requestAnimationFrame(animateLightning);
+        }
+        animateLightning();
+
+        // 2. TOGGLE ANGEL / DEVIL MODE
+        function toggleTheme() {
+            const body = document.body;
+            const themeBtn = document.getElementById('theme-btn');
+            if (body.getAttribute('data-theme') === 'angel') {
+                body.setAttribute('data-theme', 'devil');
+                themeBtn.innerHTML = '😇 Angel Mode (Aman)';
+            } else {
+                body.setAttribute('data-theme', 'angel');
+                themeBtn.innerHTML = '😈 Devil Mode (Bahaya)';
+            }
+        }
+
+        // 3. LOGIKA SIDEBAR & JAM
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            if (window.innerWidth <= 900) {
+                sidebar.classList.toggle('active-mobile');
+            } else {
+                sidebar.classList.toggle('closed');
+                mainContent.classList.toggle('expanded');
+            }
+        }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('digital-clock').textContent = now.toLocaleTimeString('id-ID', { hour12: false });
+            document.getElementById('current-date').textContent = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('footer-year').textContent = now.getFullYear();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // 4. JADWAL SHIFT OTOMATIS
+        const baseDate = new Date(2026, 7, 1); 
+        let currentShiftType = '8-18'; 
+
+        const pola8_18 = {
+            eko:     ['M', 'M', 'L', 'L', 'P&S', 'L', 'S&M', 'L'],
+            suwarto: ['L', 'L', 'P', 'P', 'L', 'P&S', 'L', 'S&M'],
+            ikhsan:  ['P&S', 'L', 'S&M', 'L', 'M', 'M', 'L', 'L'],
+            syarif:  ['L', 'P&S', 'L', 'S&M', 'L', 'L', 'P', 'P']
+        };
+        const pola24 = {
+            eko:     ['L', 'L', 'P', 'L'],
+            suwarto: ['L', 'P', 'L', 'L'],
+            ikhsan:  ['P', 'L', 'L', 'L'],
+            syarif:  ['L', 'L', 'L', 'P']
+        };
+        const pola8 = {
+            eko:     ['M', 'M', 'L', 'L', 'P', 'P', 'S', 'S'],
+            suwarto: ['L', 'L', 'P', 'P', 'S', 'S', 'M', 'M'],
+            ikhsan:  ['P', 'P', 'S', 'S', 'M', 'M', 'L', 'L'],
+            syarif:  ['S', 'S', 'M', 'M', 'L', 'L', 'P', 'P']
+        };
+
+        function setShiftType(type) {
+            const loadingScreen = document.getElementById('loading-screen');
+            document.getElementById('loading-text').textContent = "MENYESUAIKAN JADWAL...";
+            loadingScreen.classList.remove('hide');
+
+            document.querySelectorAll('.shift-btn').forEach(btn => btn.classList.remove('active'));
+
+            setTimeout(() => {
+                currentShiftType = type;
+                document.getElementById(`btn-${type}`).classList.add('active');
+                renderCalendar(); 
+                loadingScreen.classList.add('hide');
+            }, 3100);
+        }
+
+        function showInitialLoading() {
+            const loadingScreen = document.getElementById('loading-screen');
+            setTimeout(() => { loadingScreen.classList.add('hide'); }, 1500);
+        }
+
+        function getBadgeClass(shift) {
+            if (shift === 'P&S') return 'badge-ps';
+            if (shift === 'S&M') return 'badge-sm';
+            if (shift === 'P') return 'badge-p';
+            if (shift === 'S') return 'badge-s';
+            if (shift === 'M') return 'badge-m';
+            return 'badge-l'; 
+        }
+
+        function hitungShift(year, month, day) {
+            const targetDate = new Date(year, month, day, 12, 0, 0); 
+            const diffTime = targetDate - baseDate;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            let pola = currentShiftType === '8-18' ? pola8_18 : (currentShiftType === '24' ? pola24 : pola8);
+            let cycleLength = currentShiftType === '24' ? 4 : 8;
+
+            let index = diffDays % cycleLength;
+            if (index < 0) index += cycleLength; 
+            
+            return {
+                eko: pola.eko[index],
+                suwarto: pola.suwarto[index],
+                ikhsan: pola.ikhsan[index],
+                syarif: pola.syarif[index]
+            };
+        }
+
+        // 5. KALENDER DINAMIS
+        let currentDate = new Date();
+        let selectedDateKey = ""; 
+
+        function renderCalendar() {
+            const monthYear = document.getElementById("month-year");
+            const calendarBody = document.getElementById("calendar-body");
+            calendarBody.innerHTML = "";
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            monthYear.textContent = `${months[month]} ${year}`;
+
+            const days = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+            days.forEach(day => {
+                const div = document.createElement("div");
+                div.className = "day-name";
+                div.textContent = day;
+                calendarBody.appendChild(div);
+            });
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < firstDay; i++) {
+                calendarBody.appendChild(document.createElement("div"));
+            }
+
+            const today = new Date();
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dayDiv = document.createElement("div");
+                dayDiv.className = "day";
+                dayDiv.textContent = i;
+                
+                if (i === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                    dayDiv.classList.add("today");
+                }
+                
+                dayDiv.onclick = () => openModal(year, month, i);
+                calendarBody.appendChild(dayDiv);
+            }
+        }
+
+        function changeMonth(step) {
+            currentDate.setMonth(currentDate.getMonth() + step);
+            renderCalendar();
+        }
+
+        // 6. POP-UP MODAL JADWAL
+        function openModal(year, month, day) {
+            const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            document.getElementById("modal-date-title").textContent = `Jadwal: ${day} ${months[month]} ${year}`;
+            
+            const shiftHariIni = hitungShift(year, month, day);
+            const tbody = document.getElementById("modal-schedule-body");
+            tbody.innerHTML = `
+                <tr><td style="border: 1px solid var(--primary-glow); padding: 10px; text-align: center;">Mas Eko</td><td style="border: 1px solid var(--primary-glow); padding: 10px; text-align: center;"><span class="badge ${getBadgeClass(shiftHariIni.eko)}">${shiftHariIni.eko}</span></td></tr>
+                <tr><td style="border: 1px solid var(--primary-glow); padding: 10px; text-align: center;">Cang Suwarto</td><td style="border: 1px solid var(--primary-glow); padding: 10px; text-align: center;"><span class="badge ${getBadgeClass(shiftHariIni.suwarto)}">${shiftHariIni.suwarto}</span></td></tr>
+                <tr><td style="border: 1px solid var(--primary-glow); padding: 10px; text-align: center;">Cang Ikhsan</td><td style="border: 1px solid var(--primary-glow); padding: 10px; text-align: center;"><span class="badge ${getBadgeClass(shiftHariIni.ikhsan)}">${shiftHariIni.ikhsan}</span></td></tr>
+                <tr><td style="border: 1px solid var(--primary-glow); padding: 10px; text-align: center;">Cang Syarif</td><td style="border: 1px solid var(--primary-glow); padding: 10px; text-align: center;"><span class="badge ${getBadgeClass(shiftHariIni.syarif)}">${shiftHariIni.syarif}</span></td></tr>
+            `;
+
+            selectedDateKey = `agenda_${year}_${month}_${day}`;
+            document.getElementById("agenda-input").value = localStorage.getItem(selectedDateKey) || "";
+
+            const modal = document.getElementById("schedule-modal");
+            modal.style.display = "flex";
+            setTimeout(() => { modal.classList.add('show'); }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById("schedule-modal");
+            modal.classList.remove('show');
+            setTimeout(() => { modal.style.display = "none"; }, 300); 
+        }
+
+        function saveAgenda() {
+            const agendaText = document.getElementById("agenda-input").value;
+            if(agendaText.trim() === "") {
+                localStorage.removeItem(selectedDateKey); 
+            } else {
+                localStorage.setItem(selectedDateKey, agendaText); 
+            }
+            alert("Catatan operator berhasil disimpan!");
+            closeModal();
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById("schedule-modal");
+            if (event.target === modal) { closeModal(); }
+        }
+
+        window.addEventListener('DOMContentLoaded', showInitialLoading);
+        renderCalendar();
+    </script>
+</body>
+</html>
